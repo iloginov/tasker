@@ -180,6 +180,30 @@ const TaskGraph = ({ tasks, onTaskEdit }) => {
     [nodes, edges, setNodes, setEdges, fitView]
   );
 
+  const onEdgeDoubleClick = useCallback(
+    async (event, edge) => {
+      try {
+        const [source, target] = edge.id.slice(1).split('-');
+        const response = await fetch(
+          `http://localhost:3001/api/tasks/${target}/dependencies/${source}`,
+          {
+            method: 'DELETE',
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error('Failed to delete dependency');
+        }
+
+        // Удаляем связь из состояния
+        setEdges((eds) => eds.filter((e) => e.id !== edge.id));
+      } catch (error) {
+        console.error('Error deleting dependency:', error);
+      }
+    },
+    [setEdges]
+  );
+
   return (
     <div style={{ width: '100%', height: '100%' }}>
       <ReactFlow
@@ -188,6 +212,7 @@ const TaskGraph = ({ tasks, onTaskEdit }) => {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        onEdgeDoubleClick={onEdgeDoubleClick}
         nodeTypes={nodeTypes}
         fitView
       >
