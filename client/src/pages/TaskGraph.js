@@ -7,7 +7,10 @@ import {
   useNodesState,
   useEdgesState,
   Panel,
+  useReactFlow,
+  ReactFlowProvider,
 } from '@xyflow/react';
+import dagre from 'dagre';
 import '@xyflow/react/dist/style.css';
 import styled from 'styled-components';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -72,13 +75,23 @@ const AddButton = styled(Button)`
   }
 `;
 
-const TaskGraph = () => {
+const AutoLayoutButton = styled(Button)`
+  background: #6c757d;
+  margin-left: 10px;
+  
+  &:hover {
+    background: #5a6268;
+  }
+`;
+
+const TaskGraphContent = () => {
   const { projectId } = useParams();
   const navigate = useNavigate();
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [editingTask, setEditingTask] = useState(null);
   const [projectName, setProjectName] = useState('');
+  const { fitView } = useReactFlow();
 
   // Загрузка названия проекта
   const getProjectName = async () => {
@@ -303,6 +316,59 @@ const TaskGraph = () => {
     }
   };
 
+  // Функция для автоматического размещения узлов с использованием dagre
+  const layoutNodes = useCallback(() => {
+    try {
+      // Создаем новый граф
+      const dagreGraph = new dagre.graphlib.Graph();
+      dagreGraph.setGraph({
+        rankdir: 'TB',
+        nodesep: 50,
+        ranksep: 100,
+        marginx: 50,
+        marginy: 50,
+      });
+      dagreGraph.setDefaultEdgeLabel(() => ({}));
+
+      // Добавляем узлы в граф
+      nodes.forEach((node) => {
+        dagreGraph.setNode(node.id, {
+          width: 200,
+          height: 100,
+        });
+      });
+
+      // Добавляем рёбра в граф
+      edges.forEach((edge) => {
+        dagreGraph.setEdge(edge.source, edge.target);
+      });
+
+      // Применяем layout
+      dagre.layout(dagreGraph);
+
+      // Обновляем позиции узлов
+      const newNodes = nodes.map((node) => {
+        const nodeWithPosition = dagreGraph.node(node.id);
+        if (!nodeWithPosition) {
+          console.warn(`Node ${node.id} not found in dagre graph`);
+          return node;
+        }
+        return {
+          ...node,
+          position: {
+            x: nodeWithPosition.x - 100, // Центрируем узел
+            y: nodeWithPosition.y - 50,
+          },
+        };
+      });
+
+      setNodes(newNodes);
+      setTimeout(() => fitView({ padding: 0.2 }), 50);
+    } catch (error) {
+      console.error('Error during layout:', error);
+    }
+  }, [nodes, edges, setNodes, fitView]);
+
   return (
     <Container>
       <Toolbar>
@@ -310,6 +376,9 @@ const TaskGraph = () => {
           <BackButton onClick={() => navigate('/')}>
             Вернуться к проектам
           </BackButton>
+          <AutoLayoutButton onClick={layoutNodes}>
+            Автоматическое размещение
+          </AutoLayoutButton>
         </div>
         <ToolbarTitle>{projectName}</ToolbarTitle>
         <div>
@@ -340,6 +409,14 @@ const TaskGraph = () => {
         />
       )}
     </Container>
+  );
+};
+
+const TaskGraph = () => {
+  return (
+    <ReactFlowProvider>
+      <TaskGraphContent />
+    </ReactFlowProvider>
   );
 };
 
