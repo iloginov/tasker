@@ -15,4 +15,9 @@ router.post('/projects/:projectId/tasks', taskController.createTask);
 router.patch('/tasks/:id', taskController.updateTask);
 router.delete('/tasks/:id', taskController.deleteTask);
 
+// Маршруты для зависимостей задач
+router.get('/tasks/:taskId/dependencies', taskController.getTaskDependencies);
+router.post('/tasks/:taskId/dependencies', taskController.createDependency);
+router.delete('/tasks/:taskId/dependencies/:dependentTaskId', taskController.deleteDependency);
+
 module.exports = router; 

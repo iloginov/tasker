@@ -108,6 +108,71 @@ const taskController = {
       }
       res.json({ message: 'Task deleted successfully' });
     });
+  },
+
+  // Получить зависимости задачи
+  getTaskDependencies: (req, res) => {
+    const { taskId } = req.params;
+    
+    db.all(
+      `SELECT * FROM task_dependencies 
+       WHERE sourceTaskId = ? OR dependentTaskId = ?`,
+      [taskId, taskId],
+      (err, rows) => {
+        if (err) {
+          res.status(500).json({ error: err.message });
+          return;
+        }
+        res.json(rows);
+      }
+    );
+  },
+
+  // Создать зависимость между задачами
+  createDependency: (req, res) => {
+    const { taskId } = req.params;
+    const { dependentTaskId } = req.body;
+
+    if (!dependentTaskId) {
+      res.status(400).json({ error: 'Dependent task ID is required' });
+      return;
+    }
+
+    db.run(
+      `INSERT INTO task_dependencies (sourceTaskId, dependentTaskId)
+       VALUES (?, ?)`,
+      [taskId, dependentTaskId],
+      function(err) {
+        if (err) {
+          res.status(500).json({ error: err.message });
+          return;
+        }
+        res.json({
+          id: this.lastID,
+          sourceTaskId: taskId,
+          dependentTaskId,
+          createdAt: new Date().toISOString()
+        });
+      }
+    );
+  },
+
+  // Удалить зависимость между задачами
+  deleteDependency: (req, res) => {
+    const { taskId, dependentTaskId } = req.params;
+    
+    db.run(
+      `DELETE FROM task_dependencies 
+       WHERE sourceTaskId = ? AND dependentTaskId = ?`,
+      [taskId, dependentTaskId],
+      (err) => {
+        if (err) {
+          res.status(500).json({ error: err.message });
+          return;
+        }
+        res.json({ message: 'Dependency deleted successfully' });
+      }
+    );
   }
 };
 

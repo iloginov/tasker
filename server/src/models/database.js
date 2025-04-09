@@ -36,6 +36,19 @@ function initDatabase() {
         FOREIGN KEY (parentId) REFERENCES tasks (id) ON DELETE SET NULL
       )
     `);
+
+    // Создаем таблицу зависимостей задач
+    db.run(`
+      CREATE TABLE IF NOT EXISTS task_dependencies (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        sourceTaskId INTEGER NOT NULL,
+        dependentTaskId INTEGER NOT NULL,
+        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (sourceTaskId) REFERENCES tasks (id) ON DELETE CASCADE,
+        FOREIGN KEY (dependentTaskId) REFERENCES tasks (id) ON DELETE CASCADE,
+        UNIQUE(sourceTaskId, dependentTaskId)
+      )
+    `);
   });
 }
 
