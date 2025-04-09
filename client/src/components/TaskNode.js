@@ -3,6 +3,10 @@ import { Handle, Position } from '@xyflow/react';
 import styled from 'styled-components';
 import ReactMarkdown from 'react-markdown';
 
+// ВАЖНО: Не изменяйте стили NodeContainer!
+// Этот компонент имеет фиксированные размеры и стили, которые критически важны
+// для правильной работы ReactFlow и автоматического размещения узлов.
+// Изменение этих стилей приведет к неправильному отображению и работе графа.
 const NodeContainer = styled.div`
   width: 200px;
   border-radius: 5px;
