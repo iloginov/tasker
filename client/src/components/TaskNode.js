@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Handle, Position } from '@xyflow/react';
 import styled from 'styled-components';
 import ReactMarkdown from 'react-markdown';
@@ -96,37 +96,7 @@ const handleStyle = {
   cursor: 'pointer',
 };
 
-const TaskNode = ({ data, selected }) => {
-  const [isEditing, setIsEditing] = useState(false);
-  const [title, setTitle] = useState(data.label);
-  const [description, setDescription] = useState(data.description || '');
-
-  const handleSave = async () => {
-    try {
-      const response = await fetch(`http://localhost:3001/api/tasks/${data.id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          title,
-          description,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update task');
-      }
-
-      // Обновляем данные в родительском компоненте
-      data.label = title;
-      data.description = description;
-      setIsEditing(false);
-    } catch (error) {
-      console.error('Error updating task:', error);
-    }
-  };
-
+const TaskNode = ({ data, selected, onEdit }) => {
   return (
     <>
       <Handle
@@ -164,36 +134,21 @@ const TaskNode = ({ data, selected }) => {
       
       <NodeContainer>
         <ContentContainer>
-          {isEditing ? (
-            <>
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                style={{ width: '100%', marginBottom: '5px' }}
-              />
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                style={{ width: '100%', minHeight: '60px', marginBottom: '5px' }}
-                placeholder="Поддерживается Markdown"
-              />
-              <button onClick={handleSave}>Сохранить</button>
-              <button onClick={() => setIsEditing(false)}>Отмена</button>
-            </>
-          ) : (
-            <>
-              <Title>{title}</Title>
-              {description && (
-                <Description>
-                  <ReactMarkdown>{description}</ReactMarkdown>
-                </Description>
-              )}
-              <EditButton onClick={() => setIsEditing(true)}>
-                ✎
-              </EditButton>
-            </>
+          <Title>{data.label}</Title>
+          {data.description && (
+            <Description>
+              <ReactMarkdown>{data.description}</ReactMarkdown>
+            </Description>
           )}
+          <EditButton onClick={() => onEdit({
+            id: data.id,
+            data: {
+              label: data.label,
+              description: data.description
+            }
+          })}>
+            ✎
+          </EditButton>
         </ContentContainer>
       </NodeContainer>
       

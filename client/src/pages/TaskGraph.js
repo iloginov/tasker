@@ -12,6 +12,7 @@ import '@xyflow/react/dist/style.css';
 import styled from 'styled-components';
 import { useParams, useNavigate } from 'react-router-dom';
 import TaskNode from '../components/TaskNode';
+import TaskEditor from '../components/TaskEditor';
 
 const Container = styled.div`
   width: 100vw;
@@ -69,10 +70,11 @@ const TaskGraph = () => {
   const navigate = useNavigate();
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [editingTask, setEditingTask] = useState(null);
 
   // Определяем типы узлов
   const nodeTypes = {
-    task: TaskNode,
+    task: (props) => <TaskNode {...props} onEdit={setEditingTask} />,
   };
 
   // Загрузка задач и их зависимостей при монтировании компонента
@@ -235,6 +237,45 @@ const TaskGraph = () => {
     }
   }, []);
 
+  const handleTaskSave = async (updatedTask) => {
+    try {
+      const response = await fetch(`http://localhost:3001/api/tasks/${updatedTask.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: updatedTask.data.label,
+          description: updatedTask.data.description,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update task');
+      }
+
+      // Обновляем данные в узле
+      setNodes((nds) =>
+        nds.map((node) =>
+          node.id === updatedTask.id
+            ? {
+                ...node,
+                data: {
+                  ...node.data,
+                  label: updatedTask.data.label,
+                  description: updatedTask.data.description,
+                },
+              }
+            : node
+        )
+      );
+
+      setEditingTask(null);
+    } catch (error) {
+      console.error('Error updating task:', error);
+    }
+  };
+
   return (
     <Container>
       <Toolbar>
@@ -260,6 +301,14 @@ const TaskGraph = () => {
           <Controls />
         </ReactFlow>
       </FlowContainer>
+
+      {editingTask && (
+        <TaskEditor
+          task={editingTask}
+          onClose={() => setEditingTask(null)}
+          onSave={handleTaskSave}
+        />
+      )}
     </Container>
   );
 };

@@ -13,6 +13,7 @@ const EditorContainer = styled.div`
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   z-index: 1000;
   width: 400px;
+  box-sizing: border-box;
 `;
 
 const Overlay = styled.div`
@@ -26,12 +27,14 @@ const Overlay = styled.div`
 `;
 
 const Title = styled.h2`
-  margin-top: 0;
-  margin-bottom: 20px;
+  margin: 0 0 20px 0;
+  padding: 0;
 `;
 
 const FormGroup = styled.div`
   margin-bottom: 15px;
+  width: 100%;
+  box-sizing: border-box;
 `;
 
 const Label = styled.label`
@@ -46,6 +49,7 @@ const Input = styled.input`
   border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 14px;
+  box-sizing: border-box;
 `;
 
 const TextArea = styled.textarea`
@@ -56,12 +60,15 @@ const TextArea = styled.textarea`
   font-size: 14px;
   min-height: 100px;
   resize: vertical;
+  box-sizing: border-box;
 `;
 
 const ButtonGroup = styled.div`
   display: flex;
   justify-content: flex-end;
   margin-top: 20px;
+  width: 100%;
+  box-sizing: border-box;
 `;
 
 const Button = styled.button`
