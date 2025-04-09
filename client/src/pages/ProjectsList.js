@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 const Container = styled.div`
   padding: 20px;
@@ -36,9 +37,18 @@ const Button = styled.button`
   }
 `;
 
+const Input = styled.input`
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  margin-right: 10px;
+  width: 300px;
+`;
+
 const ProjectsList = () => {
   const [projects, setProjects] = useState([]);
   const [newProjectName, setNewProjectName] = useState('');
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchProjects();
@@ -67,11 +77,15 @@ const ProjectsList = () => {
     }
   };
 
+  const handleProjectClick = (projectId) => {
+    navigate(`/project/${projectId}`);
+  };
+
   return (
     <Container>
       <h1>Мои проекты</h1>
       <div>
-        <input
+        <Input
           type="text"
           value={newProjectName}
           onChange={(e) => setNewProjectName(e.target.value)}
@@ -80,7 +94,10 @@ const ProjectsList = () => {
         <Button onClick={createProject}>Создать проект</Button>
       </div>
       {projects.map(project => (
-        <ProjectCard key={project.id}>
+        <ProjectCard 
+          key={project.id} 
+          onClick={() => handleProjectClick(project.id)}
+        >
           <h2>{project.name}</h2>
           <p>Создан: {new Date(project.createdAt).toLocaleDateString()}</p>
         </ProjectCard>
