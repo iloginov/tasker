@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import styled from 'styled-components';
+import ReactMarkdown from 'react-markdown';
 
 const NodeContainer = styled.div`
   width: 200px;
@@ -25,7 +26,48 @@ const Description = styled.div`
   font-size: 12px;
   color: #666;
   margin-top: 5px;
-  word-break: break-word;
+  max-height: 100px;
+  overflow-y: auto;
+  text-align: left;
+  
+  /* Стили для Markdown */
+  p {
+    margin: 0 0 5px 0;
+    text-align: left;
+  }
+  
+  ul, ol {
+    margin: 0 0 5px 0;
+    padding-left: 20px;
+    text-align: left;
+  }
+  
+  code {
+    background: #f5f5f5;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-family: monospace;
+    text-align: left;
+  }
+  
+  pre {
+    background: #f5f5f5;
+    padding: 8px;
+    border-radius: 4px;
+    overflow-x: auto;
+    margin: 5px 0;
+    text-align: left;
+  }
+  
+  a {
+    color: #007bff;
+    text-decoration: none;
+    text-align: left;
+    
+    &:hover {
+      text-decoration: underline;
+    }
+  }
 `;
 
 const EditButton = styled.button`
@@ -134,6 +176,7 @@ const TaskNode = ({ data, selected }) => {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 style={{ width: '100%', minHeight: '60px', marginBottom: '5px' }}
+                placeholder="Поддерживается Markdown"
               />
               <button onClick={handleSave}>Сохранить</button>
               <button onClick={() => setIsEditing(false)}>Отмена</button>
@@ -141,7 +184,11 @@ const TaskNode = ({ data, selected }) => {
           ) : (
             <>
               <Title>{title}</Title>
-              {description && <Description>{description}</Description>}
+              {description && (
+                <Description>
+                  <ReactMarkdown>{description}</ReactMarkdown>
+                </Description>
+              )}
               <EditButton onClick={() => setIsEditing(true)}>
                 ✎
               </EditButton>

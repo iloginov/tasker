@@ -11,7 +11,7 @@ import {
 import '@xyflow/react/dist/style.css';
 import styled from 'styled-components';
 import { useParams, useNavigate } from 'react-router-dom';
-import TaskNode from '../components/SimpleNode';
+import TaskNode from '../components/TaskNode';
 
 const Container = styled.div`
   width: 100vw;
