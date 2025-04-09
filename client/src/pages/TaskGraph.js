@@ -1,20 +1,8 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import {
-  ReactFlow,
-  addEdge,
-  Background,
-  Controls,
-  useNodesState,
-  useEdgesState,
-  Panel,
-  useReactFlow,
-  ReactFlowProvider,
-} from '@xyflow/react';
-import dagre from 'dagre';
-import '@xyflow/react/dist/style.css';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useParams, useNavigate } from 'react-router-dom';
-import TaskNode from '../components/TaskNode';
+import { ReactFlowProvider } from '@xyflow/react';
+import TaskGraph from '../components/TaskGraph';
 import TaskEditor from '../components/TaskEditor';
 
 const Container = styled.div`
@@ -75,23 +63,12 @@ const AddButton = styled(Button)`
   }
 `;
 
-const AutoLayoutButton = styled(Button)`
-  background: #6c757d;
-  margin-left: 10px;
-  
-  &:hover {
-    background: #5a6268;
-  }
-`;
-
-const TaskGraphContent = () => {
+const TaskGraphPage = () => {
   const { projectId } = useParams();
   const navigate = useNavigate();
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [tasks, setTasks] = useState([]);
   const [editingTask, setEditingTask] = useState(null);
   const [projectName, setProjectName] = useState('');
-  const { fitView } = useReactFlow();
 
   // Загрузка названия проекта
   const getProjectName = async () => {
@@ -112,94 +89,26 @@ const TaskGraphContent = () => {
     getProjectName();
   }, [projectId]);
 
-  // Определяем типы узлов
-  const nodeTypes = {
-    task: (props) => <TaskNode {...props} onEdit={setEditingTask} />,
-  };
-
-  // Загрузка задач и их зависимостей при монтировании компонента
+  // Загрузка задач
   useEffect(() => {
-    const fetchTasksAndDependencies = async () => {
+    const fetchTasks = async () => {
       try {
-        // Загружаем задачи
-        const tasksResponse = await fetch(`http://localhost:3001/api/projects/${projectId}/tasks`);
-        if (!tasksResponse.ok) {
+        const response = await fetch(`http://localhost:3001/api/projects/${projectId}/tasks`);
+        if (!response.ok) {
           throw new Error('Failed to fetch tasks');
         }
-        const tasks = await tasksResponse.json();
-        
-        // Преобразуем задачи в формат узлов ReactFlow
-        const flowNodes = tasks.map((task, index) => ({
-          id: task.id.toString(),
-          type: 'task',
-          position: { 
-            x: task.positionX || 100 + index * 250, 
-            y: task.positionY || 100 
-          },
-          data: { 
-            id: task.id,
-            label: task.title,
-            description: task.description,
-          },
-        }));
-        
-        setNodes(flowNodes);
-
-        // Загружаем все зависимости один раз
-        const allDependencies = new Set();
-        
-        for (const task of tasks) {
-          const depsResponse = await fetch(`http://localhost:3001/api/tasks/${task.id}/dependencies`);
-          if (!depsResponse.ok) {
-            continue;
-          }
-          const dependencies = await depsResponse.json();
-          
-          // Добавляем только уникальные зависимости
-          dependencies.forEach(dep => {
-            // Проверяем, что зависимость относится к текущему проекту
-            if (tasks.some(t => t.id === dep.sourceTaskId) && tasks.some(t => t.id === dep.dependentTaskId)) {
-              const edgeId = `e${dep.sourceTaskId}-${dep.dependentTaskId}`;
-              if (!allDependencies.has(edgeId)) {
-                allDependencies.add(edgeId);
-              }
-            }
-          });
-        }
-
-        // Преобразуем зависимости в edges
-        const flowEdges = Array.from(allDependencies).map(edgeId => {
-          const [source, target] = edgeId.slice(1).split('-');
-          return {
-            id: edgeId,
-            source: target.toString(),
-            target: source.toString(),
-            type: 'default',
-          };
-        });
-
-        setEdges(flowEdges);
+        const tasks = await response.json();
+        setTasks(tasks);
       } catch (error) {
-        console.error('Error fetching tasks and dependencies:', error);
+        console.error('Error fetching tasks:', error);
       }
     };
 
-    fetchTasksAndDependencies();
-  }, [projectId, setNodes, setEdges]);
+    fetchTasks();
+  }, [projectId]);
 
-  // Обработчик создания нового узла
-  const handleAddNode = useCallback(async () => {
-    const newNode = {
-      id: Date.now().toString(),
-      type: 'task',
-      position: { x: 100, y: 100 },
-      data: { 
-        id: Date.now(),
-        label: 'Новая задача',
-        description: '',
-      },
-    };
-
+  // Обработчик создания новой задачи
+  const handleAddTask = async () => {
     try {
       const response = await fetch(`http://localhost:3001/api/projects/${projectId}/tasks`, {
         method: 'POST',
@@ -216,67 +125,14 @@ const TaskGraphContent = () => {
         throw new Error('Failed to create task');
       }
 
-      const savedTask = await response.json();
-      newNode.id = savedTask.id.toString();
-      setNodes((nds) => [...nds, newNode]);
+      const newTask = await response.json();
+      setTasks((prevTasks) => [...prevTasks, newTask]);
     } catch (error) {
       console.error('Error creating task:', error);
     }
-  }, [projectId, setNodes]);
+  };
 
-  // Обработчик соединения узлов
-  const onConnect = useCallback(async (params) => {
-    try {
-      const response = await fetch(`http://localhost:3001/api/tasks/${params.target}/dependencies`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          dependentTaskId: params.source,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to create dependency');
-      }
-
-      // Создаем новую связь с правильным идентификатором
-      const newEdge = {
-        id: `e${params.target}-${params.source}`,
-        source: params.target.toString(),
-        target: params.source.toString(),
-        type: 'default',
-      };
-
-      setEdges((eds) => addEdge(newEdge, eds));
-    } catch (error) {
-      console.error('Error creating dependency:', error);
-    }
-  }, [setEdges]);
-
-  // Обработчик перемещения узла
-  const onNodeDragStop = useCallback(async (event, node) => {
-    try {
-      const response = await fetch(`http://localhost:3001/api/tasks/${node.id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          positionX: Math.round(node.position.x),
-          positionY: Math.round(node.position.y),
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update task position');
-      }
-    } catch (error) {
-      console.error('Error updating task position:', error);
-    }
-  }, []);
-
+  // Обработчик сохранения задачи
   const handleTaskSave = async (updatedTask) => {
     try {
       const response = await fetch(`http://localhost:3001/api/tasks/${updatedTask.id}`, {
@@ -294,113 +150,34 @@ const TaskGraphContent = () => {
         throw new Error('Failed to update task');
       }
 
-      // Обновляем данные в узле
-      setNodes((nds) =>
-        nds.map((node) =>
-          node.id === updatedTask.id
-            ? {
-                ...node,
-                data: {
-                  ...node.data,
-                  label: updatedTask.data.label,
-                  description: updatedTask.data.description,
-                },
-              }
-            : node
+      const savedTask = await response.json();
+      setTasks((prevTasks) =>
+        prevTasks.map((task) =>
+          task.id === savedTask.id ? savedTask : task
         )
       );
-
       setEditingTask(null);
     } catch (error) {
       console.error('Error updating task:', error);
     }
   };
 
-  // Функция для автоматического размещения узлов с использованием dagre
-  const layoutNodes = useCallback(() => {
-    try {
-      // Создаем новый граф
-      const dagreGraph = new dagre.graphlib.Graph();
-      dagreGraph.setGraph({
-        rankdir: 'TB',
-        nodesep: 50,
-        ranksep: 100,
-        marginx: 50,
-        marginy: 50,
-      });
-      dagreGraph.setDefaultEdgeLabel(() => ({}));
-
-      // Добавляем узлы в граф
-      nodes.forEach((node) => {
-        dagreGraph.setNode(node.id, {
-          width: 200,
-          height: 100,
-        });
-      });
-
-      // Добавляем рёбра в граф
-      edges.forEach((edge) => {
-        dagreGraph.setEdge(edge.source, edge.target);
-      });
-
-      // Применяем layout
-      dagre.layout(dagreGraph);
-
-      // Обновляем позиции узлов
-      const newNodes = nodes.map((node) => {
-        const nodeWithPosition = dagreGraph.node(node.id);
-        if (!nodeWithPosition) {
-          console.warn(`Node ${node.id} not found in dagre graph`);
-          return node;
-        }
-        return {
-          ...node,
-          position: {
-            x: nodeWithPosition.x - 100, // Центрируем узел
-            y: nodeWithPosition.y - 50,
-          },
-        };
-      });
-
-      setNodes(newNodes);
-      setTimeout(() => fitView({ padding: 0.2 }), 50);
-    } catch (error) {
-      console.error('Error during layout:', error);
-    }
-  }, [nodes, edges, setNodes, fitView]);
-
   return (
     <Container>
       <Toolbar>
-        <div>
-          <BackButton onClick={() => navigate('/')}>
-            Вернуться к проектам
-          </BackButton>
-          <AutoLayoutButton onClick={layoutNodes}>
-            Автоматическое размещение
-          </AutoLayoutButton>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <BackButton onClick={() => navigate('/')}>← Назад</BackButton>
+          <ToolbarTitle>{projectName}</ToolbarTitle>
         </div>
-        <ToolbarTitle>{projectName}</ToolbarTitle>
         <div>
-          <AddButton onClick={handleAddNode}>Добавить задачу</AddButton>
+          <AddButton onClick={handleAddTask}>+ Добавить задачу</AddButton>
         </div>
       </Toolbar>
       <FlowContainer>
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onConnect={onConnect}
-          onNodeDragStop={onNodeDragStop}
-          nodeTypes={nodeTypes}
-          fitView
-        >
-          <Background />
-          <Controls />
-        </ReactFlow>
+        <ReactFlowProvider>
+          <TaskGraph tasks={tasks} onTaskEdit={setEditingTask} />
+        </ReactFlowProvider>
       </FlowContainer>
-
       {editingTask && (
         <TaskEditor
           task={editingTask}
@@ -412,12 +189,4 @@ const TaskGraphContent = () => {
   );
 };
 
-const TaskGraph = () => {
-  return (
-    <ReactFlowProvider>
-      <TaskGraphContent />
-    </ReactFlowProvider>
-  );
-};
-
-export default TaskGraph; 
+export default TaskGraphPage; 
