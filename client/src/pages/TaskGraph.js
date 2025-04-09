@@ -30,6 +30,13 @@ const Toolbar = styled.div`
   align-items: center;
 `;
 
+const ToolbarTitle = styled.h2`
+  margin: 0;
+  font-size: 18px;
+  font-weight: 500;
+  color: #333;
+`;
+
 const Button = styled.button`
   background: #007bff;
   color: white;
@@ -71,6 +78,26 @@ const TaskGraph = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [editingTask, setEditingTask] = useState(null);
+  const [projectName, setProjectName] = useState('');
+
+  // Загрузка названия проекта
+  const getProjectName = async () => {
+    try {
+      const response = await fetch(`http://localhost:3001/api/projects/${projectId}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch project');
+      }
+      const project = await response.json();
+      setProjectName(project.name);
+    } catch (error) {
+      console.error('Error fetching project:', error);
+      setProjectName('Проект не найден');
+    }
+  };
+
+  useEffect(() => {
+    getProjectName();
+  }, [projectId]);
 
   // Определяем типы узлов
   const nodeTypes = {
@@ -280,11 +307,14 @@ const TaskGraph = () => {
     <Container>
       <Toolbar>
         <div>
+          <BackButton onClick={() => navigate('/')}>
+            Вернуться к проектам
+          </BackButton>
+        </div>
+        <ToolbarTitle>{projectName}</ToolbarTitle>
+        <div>
           <AddButton onClick={handleAddNode}>Добавить задачу</AddButton>
         </div>
-        <BackButton onClick={() => navigate('/')}>
-          Вернуться к проектам
-        </BackButton>
       </Toolbar>
       <FlowContainer>
         <ReactFlow

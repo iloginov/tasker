@@ -12,6 +12,23 @@ const projectController = {
     });
   },
 
+  // Получить проект по ID
+  getProjectById: (req, res) => {
+    const { id } = req.params;
+    
+    db.get('SELECT * FROM projects WHERE id = ?', [id], (err, row) => {
+      if (err) {
+        res.status(500).json({ error: err.message });
+        return;
+      }
+      if (!row) {
+        res.status(404).json({ error: 'Project not found' });
+        return;
+      }
+      res.json(row);
+    });
+  },
+
   // Создать новый проект
   createProject: (req, res) => {
     const { name } = req.body;

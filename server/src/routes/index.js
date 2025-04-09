@@ -5,6 +5,7 @@ const taskController = require('../controllers/taskController');
 
 // Маршруты для проектов
 router.get('/projects', projectController.getAllProjects);
+router.get('/projects/:id', projectController.getProjectById);
 router.post('/projects', projectController.createProject);
 router.put('/projects/:id', projectController.updateProject);
 router.delete('/projects/:id', projectController.deleteProject);
