@@ -12,6 +12,8 @@ import '@xyflow/react/dist/style.css';
 import styled from 'styled-components';
 import axios from 'axios';
 import { useParams } from 'react-router-dom';
+import TaskEditor from '../components/TaskEditor';
+import CustomNode from '../components/CustomNode';
 
 const Container = styled.div`
   width: 100vw;
@@ -24,6 +26,9 @@ const Toolbar = styled.div`
   padding: 10px;
   background: #f8f9fa;
   border-bottom: 1px solid #dee2e6;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 `;
 
 const Button = styled.button`
@@ -40,11 +45,35 @@ const Button = styled.button`
   }
 `;
 
+const BackButton = styled(Button)`
+  background: #6c757d;
+  
+  &:hover {
+    background: #5a6268;
+  }
+`;
+
+const FlowContainer = styled.div`
+  flex: 1;
+  .react-flow__node {
+    background: transparent;
+    border: none;
+    padding: 0;
+    width: auto;
+    height: auto;
+  }
+`;
+
 const TaskGraph = () => {
   const { projectId } = useParams();
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [selectedNode, setSelectedNode] = useState(null);
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
+
+  const nodeTypes = {
+    custom: CustomNode,
+  };
 
   useEffect(() => {
     fetchTasks();
@@ -57,8 +86,11 @@ const TaskGraph = () => {
       
       const flowNodes = tasks.map(task => ({
         id: task.id.toString(),
-        type: 'default',
-        data: { label: task.title },
+        type: 'custom',
+        data: { 
+          label: task.title,
+          description: task.description || ''
+        },
         position: { x: task.positionX || 0, y: task.positionY || 0 },
       }));
 
@@ -78,7 +110,19 @@ const TaskGraph = () => {
   };
 
   const onConnect = useCallback(
-    (params) => setEdges((eds) => addEdge(params, eds)),
+    (params) => {
+      // Обновляем parentId для задачи
+      const targetNodeId = params.target;
+      const sourceNodeId = params.source;
+      
+      axios.patch(`http://localhost:3001/api/tasks/${targetNodeId}`, {
+        parentId: sourceNodeId
+      }).catch(error => {
+        console.error('Error updating task parent:', error);
+      });
+      
+      setEdges((eds) => addEdge(params, eds));
+    },
     [setEdges]
   );
 
@@ -95,8 +139,11 @@ const TaskGraph = () => {
         ...nds,
         {
           id: newTask.id.toString(),
-          type: 'default',
-          data: { label: newTask.title },
+          type: 'custom',
+          data: { 
+            label: newTask.title,
+            description: newTask.description || ''
+          },
           position: { x: newTask.positionX, y: newTask.positionY },
         },
       ]);
@@ -120,12 +167,35 @@ const TaskGraph = () => {
     updateTaskPosition(node.id, node.position);
   };
 
+  const onNodeClick = (event, node) => {
+    setSelectedNode(node);
+    setIsEditorOpen(true);
+  };
+
+  const handleEditorClose = () => {
+    setIsEditorOpen(false);
+    setSelectedNode(null);
+  };
+
+  const handleTaskUpdate = (updatedNode) => {
+    setNodes((nds) => 
+      nds.map((node) => 
+        node.id === updatedNode.id ? updatedNode : node
+      )
+    );
+  };
+
   return (
     <Container>
       <Toolbar>
-        <Button onClick={createTask}>Добавить задачу</Button>
+        <div>
+          <Button onClick={createTask}>Добавить задачу</Button>
+        </div>
+        <BackButton onClick={() => window.location.href = '/'}>
+          Вернуться к проектам
+        </BackButton>
       </Toolbar>
-      <div style={{ flex: 1 }}>
+      <FlowContainer>
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -133,13 +203,22 @@ const TaskGraph = () => {
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           onNodeDragStop={onNodeDragStop}
+          onNodeClick={onNodeClick}
+          nodeTypes={nodeTypes}
           fitView
         >
           <Background />
           <Controls />
           <MiniMap />
         </ReactFlow>
-      </div>
+      </FlowContainer>
+      {isEditorOpen && (
+        <TaskEditor
+          task={selectedNode}
+          onClose={handleEditorClose}
+          onSave={handleTaskUpdate}
+        />
+      )}
     </Container>
   );
 };
