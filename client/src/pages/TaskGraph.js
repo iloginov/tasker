@@ -179,6 +179,7 @@ const TaskGraphPage = () => {
   // Обработчик изменения ориентации
   const handleOrientationChange = async () => {
     const newOrientation = orientation === 'TB' ? 'LR' : 'TB';
+    console.log('Changing orientation to:', newOrientation);
     
     try {
       const response = await fetch(`http://localhost:3001/api/projects/${projectId}`, {
@@ -196,7 +197,8 @@ const TaskGraphPage = () => {
         throw new Error('Failed to update project orientation');
       }
 
-      setOrientation(newOrientation);
+      const updatedProject = await response.json();
+      setOrientation(updatedProject.orientation);
     } catch (error) {
       console.error('Error updating project orientation:', error);
     }
@@ -210,9 +212,6 @@ const TaskGraphPage = () => {
           <ToolbarTitle>{projectName} ({orientation})</ToolbarTitle>
         </div>
         <div>
-          <OrientationButton onClick={handleOrientationChange}>
-            {orientation === 'TB' ? 'Переключить на LR' : 'Переключить на TB'}
-          </OrientationButton>
           <AddButton onClick={handleAddTask}>+ Добавить задачу</AddButton>
         </div>
       </Toolbar>
@@ -222,6 +221,7 @@ const TaskGraphPage = () => {
             tasks={tasks} 
             onTaskEdit={setEditingTask} 
             orientation={orientation}
+            onOrientationChange={handleOrientationChange}
           />
         </ReactFlowProvider>
       </FlowContainer>

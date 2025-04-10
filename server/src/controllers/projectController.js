@@ -63,10 +63,21 @@ const projectController = {
 
     db.run('UPDATE projects SET name = ?, orientation = ? WHERE id = ?', [name, orientation || 'TB', id], (err) => {
       if (err) {
+        console.error('Database error:', err);
         res.status(500).json({ error: err.message });
         return;
       }
-      res.json({ id, name, orientation: orientation || 'TB' });
+      
+      // Получаем обновленный проект
+      db.get('SELECT * FROM projects WHERE id = ?', [id], (err, row) => {
+        if (err) {
+          console.error('Error fetching updated project:', err);
+          res.status(500).json({ error: err.message });
+          return;
+        }
+        console.log('Updated project:', row);
+        res.json(row);
+      });
     });
   },
 

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import {
   ReactFlow,
   Background,
@@ -65,14 +65,22 @@ const getLayoutedElements = (nodes, edges, direction = 'TB') => {
   return { nodes: layoutedNodes, edges };
 };
 
-const TaskGraph = ({ tasks, onTaskEdit, orientation = 'TB' }) => {
+const TaskGraph = ({ tasks, onTaskEdit, orientation: initialOrientation, onOrientationChange }) => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const { fitView } = useReactFlow();
+  const [orientation, setOrientation] = useState(initialOrientation);
+  const reactFlowWrapper = useRef(null);
+  const [reactFlowInstance, setReactFlowInstance] = useState(null);
 
   const nodeTypes = {
     task: (props) => <TaskNode {...props} onEdit={onTaskEdit} orientation={orientation} />,
   };
+
+  // Обновляем локальную ориентацию при изменении пропса
+  useEffect(() => {
+    setOrientation(initialOrientation);
+  }, [initialOrientation]);
 
   // Преобразуем задачи в узлы и рёбра
   useEffect(() => {
@@ -202,21 +210,15 @@ const TaskGraph = ({ tasks, onTaskEdit, orientation = 'TB' }) => {
     [setEdges]
   );
 
-  const onLayout = useCallback(
-    (direction) => {
-      const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(
-        nodes,
-        edges,
-        direction
-      );
-      setNodes([...layoutedNodes]);
-      setEdges([...layoutedEdges]);
-      setTimeout(() => {
-        fitView({ padding: 0.2 });
-      }, 50);
-    },
-    [nodes, edges, setNodes, setEdges, fitView]
-  );
+  const onLayout = useCallback((direction) => {
+    if (!reactFlowInstance) return;
+    
+    setOrientation(direction);
+    onOrientationChange(direction);
+    const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(nodes, edges, direction);
+    setNodes([...layoutedNodes]);
+    setEdges([...layoutedEdges]);
+  }, [nodes, edges, reactFlowInstance, onOrientationChange]);
 
   const onEdgeDoubleClick = useCallback(
     async (event, edge) => {
@@ -243,7 +245,7 @@ const TaskGraph = ({ tasks, onTaskEdit, orientation = 'TB' }) => {
   );
 
   return (
-    <div style={{ width: '100%', height: '100%' }}>
+    <div style={{ width: '100%', height: '100%' }} ref={reactFlowWrapper}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -251,6 +253,7 @@ const TaskGraph = ({ tasks, onTaskEdit, orientation = 'TB' }) => {
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onEdgeDoubleClick={onEdgeDoubleClick}
+        onInit={setReactFlowInstance}
         nodeTypes={nodeTypes}
         fitView
       >
