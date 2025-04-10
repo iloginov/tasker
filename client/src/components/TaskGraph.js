@@ -20,14 +20,22 @@ const getLayoutedElements = (nodes, edges, direction = 'TB') => {
   const dagreGraph = new dagre.graphlib.Graph();
   dagreGraph.setDefaultEdgeLabel(() => ({}));
   
-  const nodeWidth = 200;
-  const nodeHeight = 100;
+  // Базовые размеры карточки
+  const baseNodeWidth = 200;
+  const baseNodeHeight = 100;
   
-  dagreGraph.setGraph({ rankdir: direction, nodesep: 50, ranksep: 50 });
+  dagreGraph.setGraph({ rankdir: direction, nodesep: 100, ranksep: 100 });
 
-  // Добавляем узлы в граф dagre
+  // Добавляем узлы в граф dagre с учетом размера описания
   nodes.forEach((node) => {
-    dagreGraph.setNode(node.id, { width: nodeWidth, height: nodeHeight });
+    const description = node.data.description || '';
+    const lines = description.split('\n').length;
+    const estimatedHeight = baseNodeHeight + (lines * 20); // 20px на строку описания
+    
+    dagreGraph.setNode(node.id, { 
+      width: baseNodeWidth, 
+      height: Math.max(estimatedHeight, baseNodeHeight)
+    });
   });
 
   // Добавляем рёбра в граф dagre
@@ -41,11 +49,15 @@ const getLayoutedElements = (nodes, edges, direction = 'TB') => {
   // Получаем новые позиции узлов
   const layoutedNodes = nodes.map((node) => {
     const nodeWithPosition = dagreGraph.node(node.id);
+    const description = node.data.description || '';
+    const lines = description.split('\n').length;
+    const estimatedHeight = baseNodeHeight + (lines * 20);
+    
     return {
       ...node,
       position: {
-        x: nodeWithPosition.x - nodeWidth / 2,
-        y: nodeWithPosition.y - nodeHeight / 2,
+        x: nodeWithPosition.x - baseNodeWidth / 2,
+        y: nodeWithPosition.y - Math.max(estimatedHeight, baseNodeHeight) / 2,
       },
     };
   });
@@ -248,4 +260,4 @@ const TaskGraph = ({ tasks, onTaskEdit }) => {
   );
 };
 
-export default TaskGraph; 
+export default TaskGraph;
