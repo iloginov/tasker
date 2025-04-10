@@ -65,13 +65,13 @@ const getLayoutedElements = (nodes, edges, direction = 'TB') => {
   return { nodes: layoutedNodes, edges };
 };
 
-const TaskGraph = ({ tasks, onTaskEdit }) => {
+const TaskGraph = ({ tasks, onTaskEdit, orientation = 'TB' }) => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const { fitView } = useReactFlow();
 
   const nodeTypes = {
-    task: (props) => <TaskNode {...props} onEdit={onTaskEdit} />,
+    task: (props) => <TaskNode {...props} onEdit={onTaskEdit} orientation={orientation} />,
   };
 
   // Преобразуем задачи в узлы и рёбра
@@ -119,13 +119,17 @@ const TaskGraph = ({ tasks, onTaskEdit }) => {
             source: target.toString(),
             target: source.toString(),
             type: 'smoothstep',
+            // Устанавливаем точки соединения в зависимости от ориентации
+            sourceHandle: orientation === 'TB' ? 'bottom' : 'right',
+            targetHandle: orientation === 'TB' ? 'top' : 'left',
           };
         });
 
         // Применяем layout
         const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(
           newNodes,
-          newEdges
+          newEdges,
+          orientation
         );
 
         setNodes(layoutedNodes);
@@ -141,7 +145,7 @@ const TaskGraph = ({ tasks, onTaskEdit }) => {
     };
 
     fetchDependencies();
-  }, [tasks, setNodes, setEdges, fitView]);
+  }, [tasks, setNodes, setEdges, fitView, orientation]);
 
   // Обновляем узлы при изменении задач
   useEffect(() => {

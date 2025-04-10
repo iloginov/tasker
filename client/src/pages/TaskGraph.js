@@ -63,15 +63,24 @@ const AddButton = styled(Button)`
   }
 `;
 
+const OrientationButton = styled(Button)`
+  background: #17a2b8;
+  
+  &:hover {
+    background: #138496;
+  }
+`;
+
 const TaskGraphPage = () => {
   const { projectId } = useParams();
   const navigate = useNavigate();
   const [tasks, setTasks] = useState([]);
   const [editingTask, setEditingTask] = useState(null);
   const [projectName, setProjectName] = useState('');
+  const [orientation, setOrientation] = useState('TB');
 
-  // Загрузка названия проекта
-  const getProjectName = async () => {
+  // Загрузка названия проекта и ориентации
+  const getProjectInfo = async () => {
     try {
       const response = await fetch(`http://localhost:3001/api/projects/${projectId}`);
       if (!response.ok) {
@@ -79,6 +88,7 @@ const TaskGraphPage = () => {
       }
       const project = await response.json();
       setProjectName(project.name);
+      setOrientation(project.orientation || 'TB');
     } catch (error) {
       console.error('Error fetching project:', error);
       setProjectName('Проект не найден');
@@ -86,7 +96,7 @@ const TaskGraphPage = () => {
   };
 
   useEffect(() => {
-    getProjectName();
+    getProjectInfo();
   }, [projectId]);
 
   // Загрузка задач
@@ -166,20 +176,53 @@ const TaskGraphPage = () => {
     }
   };
 
+  // Обработчик изменения ориентации
+  const handleOrientationChange = async () => {
+    const newOrientation = orientation === 'TB' ? 'LR' : 'TB';
+    
+    try {
+      const response = await fetch(`http://localhost:3001/api/projects/${projectId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: projectName,
+          orientation: newOrientation,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update project orientation');
+      }
+
+      setOrientation(newOrientation);
+    } catch (error) {
+      console.error('Error updating project orientation:', error);
+    }
+  };
+
   return (
     <Container>
       <Toolbar>
         <div style={{ display: 'flex', alignItems: 'center' }}>
           <BackButton onClick={() => navigate('/')}>← Назад</BackButton>
-          <ToolbarTitle>{projectName}</ToolbarTitle>
+          <ToolbarTitle>{projectName} ({orientation})</ToolbarTitle>
         </div>
         <div>
+          <OrientationButton onClick={handleOrientationChange}>
+            {orientation === 'TB' ? 'Переключить на LR' : 'Переключить на TB'}
+          </OrientationButton>
           <AddButton onClick={handleAddTask}>+ Добавить задачу</AddButton>
         </div>
       </Toolbar>
       <FlowContainer>
         <ReactFlowProvider>
-          <TaskGraph tasks={tasks} onTaskEdit={setEditingTask} />
+          <TaskGraph 
+            tasks={tasks} 
+            onTaskEdit={setEditingTask} 
+            orientation={orientation}
+          />
         </ReactFlowProvider>
       </FlowContainer>
       {editingTask && (

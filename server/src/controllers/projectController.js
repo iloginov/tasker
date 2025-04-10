@@ -31,13 +31,13 @@ const projectController = {
 
   // Создать новый проект
   createProject: (req, res) => {
-    const { name } = req.body;
+    const { name, orientation } = req.body;
     if (!name) {
       res.status(400).json({ error: 'Name is required' });
       return;
     }
 
-    db.run('INSERT INTO projects (name) VALUES (?)', [name], function(err) {
+    db.run('INSERT INTO projects (name, orientation) VALUES (?, ?)', [name, orientation || 'TB'], function(err) {
       if (err) {
         res.status(500).json({ error: err.message });
         return;
@@ -45,6 +45,7 @@ const projectController = {
       res.json({
         id: this.lastID,
         name,
+        orientation: orientation || 'TB',
         createdAt: new Date().toISOString()
       });
     });
@@ -53,19 +54,19 @@ const projectController = {
   // Обновить проект
   updateProject: (req, res) => {
     const { id } = req.params;
-    const { name } = req.body;
+    const { name, orientation } = req.body;
     
     if (!name) {
       res.status(400).json({ error: 'Name is required' });
       return;
     }
 
-    db.run('UPDATE projects SET name = ? WHERE id = ?', [name, id], (err) => {
+    db.run('UPDATE projects SET name = ?, orientation = ? WHERE id = ?', [name, orientation || 'TB', id], (err) => {
       if (err) {
         res.status(500).json({ error: err.message });
         return;
       }
-      res.json({ id, name });
+      res.json({ id, name, orientation: orientation || 'TB' });
     });
   },
 

@@ -17,6 +17,7 @@ function initDatabase() {
       CREATE TABLE IF NOT EXISTS projects (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
+        orientation TEXT DEFAULT 'TB',
         createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);

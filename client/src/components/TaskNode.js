@@ -100,44 +100,66 @@ const handleStyle = {
   cursor: 'pointer',
 };
 
-const TaskNode = ({ data, selected, onEdit }) => {
+const TaskNode = ({ data, selected, onEdit, orientation = 'TB' }) => {
+  // Определяем, какие точки соединения отображать в зависимости от ориентации
+  const showVerticalHandles = orientation === 'TB';
+  const showHorizontalHandles = orientation === 'LR';
+
   return (
     <>
-      <Handle
-        id="top"
-        type="target"
-        position={Position.Top}
-        style={{ 
-          ...handleStyle,
-          left: '50%', 
-          transform: 'translateX(-50%)',
-          top: '-4px'
-        }}
-      />
+      {showVerticalHandles && (
+        <>
+          <Handle
+            id="top"
+            type="target"
+            position={Position.Top}
+            style={{ 
+              ...handleStyle,
+              left: '50%', 
+              transform: 'translateX(-50%)',
+              top: '-4px'
+            }}
+          />
+          <Handle
+            id="bottom"
+            type="source"
+            position={Position.Bottom}
+            style={{ 
+              ...handleStyle,
+              left: '50%', 
+              transform: 'translateX(-50%)',
+              bottom: '-4px'
+            }}
+          />
+        </>
+      )}
       
-      <Handle
-        id="left"
-        type="target"
-        position={Position.Left}
-        style={{ 
-          ...handleStyle,
-          top: '50%', 
-          transform: 'translateY(-50%)',
-          left: '-6px'
-        }}
-      />
-      
-      <Handle
-        id="right"
-        type="source"
-        position={Position.Right}
-        style={{ 
-          ...handleStyle,
-          top: '50%', 
-          transform: 'translateY(-50%)',
-          right: '-6px'
-        }}
-      />
+      {showHorizontalHandles && (
+        <>
+          <Handle
+            id="left"
+            type="target"
+            position={Position.Left}
+            style={{ 
+              ...handleStyle,
+              top: '50%', 
+              transform: 'translateY(-50%)',
+              left: '-6px'
+            }}
+          />
+          <Handle
+            id="right"
+            type="source"
+            position={Position.Right}
+            style={{ 
+              ...handleStyle,
+              top: '50%', 
+              transform: 'translateY(-50%)',
+              right: '-6px'
+            }}
+          />
+        </>
+      )}
       
       <NodeContainer>
         <ContentContainer>
@@ -158,18 +180,6 @@ const TaskNode = ({ data, selected, onEdit }) => {
           </EditButton>
         </ContentContainer>
       </NodeContainer>
-      
-      <Handle
-        id="bottom"
-        type="source"
-        position={Position.Bottom}
-        style={{ 
-          ...handleStyle,
-          left: '50%', 
-          transform: 'translateX(-50%)',
-          bottom: '-4px'
-        }}
-      />
     </>
   );
 };
