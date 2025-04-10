@@ -180,12 +180,14 @@ const TaskGraph = ({ tasks, onTaskEdit }) => {
           throw new Error('Failed to create dependency');
         }
 
-        // Создаем новую связь с правильным идентификатором
+        // Создаем новую связь с правильным идентификатором и учетом выбранных точек соединения
         const newEdge = {
-          id: `e${params.target}-${params.source}`,
-          source: params.target.toString(),
-          target: params.source.toString(),
+          id: `e${params.source}-${params.target}`,
+          source: params.source.toString(),
+          target: params.target.toString(),
           type: 'smoothstep',
+          sourceHandle: params.sourceHandle,
+          targetHandle: params.targetHandle,
         };
 
         setEdges((eds) => addEdge(newEdge, eds));

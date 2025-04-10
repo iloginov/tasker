@@ -104,6 +104,7 @@ const TaskNode = ({ data, selected, onEdit }) => {
   return (
     <>
       <Handle
+        id="top"
         type="target"
         position={Position.Top}
         style={{ 
@@ -115,6 +116,7 @@ const TaskNode = ({ data, selected, onEdit }) => {
       />
       
       <Handle
+        id="left"
         type="target"
         position={Position.Left}
         style={{ 
@@ -126,6 +128,7 @@ const TaskNode = ({ data, selected, onEdit }) => {
       />
       
       <Handle
+        id="right"
         type="source"
         position={Position.Right}
         style={{ 
@@ -157,6 +160,7 @@ const TaskNode = ({ data, selected, onEdit }) => {
       </NodeContainer>
       
       <Handle
+        id="bottom"
         type="source"
         position={Position.Bottom}
         style={{ 
