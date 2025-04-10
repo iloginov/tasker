@@ -110,7 +110,7 @@ const TaskEditor = ({ task, onClose, onSave }) => {
 
   const handleSave = async () => {
     try {
-      await axios.patch(`http://localhost:3001/api/tasks/${task.id}`, {
+      const response = await axios.patch(`http://localhost:3001/api/tasks/${task.id}`, {
         title,
         description
       });
@@ -119,8 +119,8 @@ const TaskEditor = ({ task, onClose, onSave }) => {
         ...task,
         data: {
           ...task.data,
-          label: title,
-          description
+          label: response.data.title,
+          description: response.data.description
         }
       });
       

@@ -15,10 +15,6 @@ import '@xyflow/react/dist/style.css';
 import styled from 'styled-components';
 import TaskNode from './TaskNode';
 
-const nodeTypes = {
-  task: TaskNode,
-};
-
 // Функция для автоматического размещения узлов
 const getLayoutedElements = (nodes, edges, direction = 'TB') => {
   const dagreGraph = new dagre.graphlib.Graph();
@@ -61,6 +57,10 @@ const TaskGraph = ({ tasks, onTaskEdit }) => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const { fitView } = useReactFlow();
+
+  const nodeTypes = {
+    task: (props) => <TaskNode {...props} onEdit={onTaskEdit} />,
+  };
 
   // Преобразуем задачи в узлы и рёбра
   useEffect(() => {
@@ -130,6 +130,26 @@ const TaskGraph = ({ tasks, onTaskEdit }) => {
 
     fetchDependencies();
   }, [tasks, setNodes, setEdges, fitView]);
+
+  // Обновляем узлы при изменении задач
+  useEffect(() => {
+    setNodes((nds) =>
+      nds.map((node) => {
+        const task = tasks.find((t) => t.id.toString() === node.id);
+        if (task) {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              label: task.title,
+              description: task.description,
+            },
+          };
+        }
+        return node;
+      })
+    );
+  }, [tasks, setNodes]);
 
   const onConnect = useCallback(
     async (params) => {

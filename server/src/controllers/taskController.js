@@ -93,7 +93,15 @@ const taskController = {
         res.status(500).json({ error: err.message });
         return;
       }
-      res.json({ message: 'Task updated successfully' });
+      
+      // Получаем обновленную задачу
+      db.get('SELECT * FROM tasks WHERE id = ?', [id], (err, row) => {
+        if (err) {
+          res.status(500).json({ error: err.message });
+          return;
+        }
+        res.json(row);
+      });
     });
   },
 

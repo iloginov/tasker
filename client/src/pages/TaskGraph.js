@@ -153,7 +153,11 @@ const TaskGraphPage = () => {
       const savedTask = await response.json();
       setTasks((prevTasks) =>
         prevTasks.map((task) =>
-          task.id === savedTask.id ? savedTask : task
+          task.id === savedTask.id ? {
+            ...task,
+            title: savedTask.title,
+            description: savedTask.description
+          } : task
         )
       );
       setEditingTask(null);
